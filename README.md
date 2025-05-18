@@ -1,71 +1,41 @@
-# code-smeller README
+# Code Smeller
 
-This is the README for your extension "code-smeller". After writing up a brief description, we recommend including the following sections.
+**Code Smeller** is a lightweight Visual Studio Code extension that helps you write cleaner, more maintainable code by leveraging LLM-based analysis. It reviews your code for:
 
-## Features
+- Poor or vague variable naming
+- Refactoring opportunities
+- Coding standards violations
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
-
-For example if there is an image subfolder under your extension project workspace:
-
-\!\[feature X\]\(images/feature-x.png\)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
-
-## Requirements
-
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
-
-## Extension Settings
-
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
-
-## Known Issues
-
-Calling out known issues can help limit users opening duplicate issues against your extension.
-
-## Release Notes
-
-Users appreciate release notes as you update your extension.
-
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
+All feedback is rendered in a markdown-powered side panel, making it easy to read and act on.
 
 ---
 
-## Following extension guidelines
+## ✨ Features
 
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
+- ✅ Right-click any code file to trigger a Gemini-powered code review
+- ✅ Clear markdown feedback with naming, structure, and style suggestions
+- ✅ Supports JavaScript, TypeScript, Python, and more
+- ✅ Secure API key management using VSCode SecretStorage
+- ✅ Extensible and language-agnostic by design
 
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
+## 🔧 Extension Settings
 
-## Working with Markdown
+This extension contributes the following VSCode settings:
 
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
+- `codeSmeller.apiKey`: _(Optional)_ Store your Gemini API key (prefer SecretStorage instead)
 
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
+---
 
-## For more information
+## 📦 Commands
 
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
+| Command                            | Description                                     |
+| ---------------------------------- | ----------------------------------------------- |
+| `Code Smeller: Smell Code`         | Analyze the open file with Gemini               |
+| `Code Smeller: Set Gemini API Key` | Securely store your API key using SecretStorage |
 
-**Enjoy!**
+---
+
+## 🐞 Known Issues
+
+- Markdown rendering may fail if network access to `marked.js` CDN is blocked
+- Large files may be truncated by token limits of

@@ -45,7 +45,6 @@
   "devDependencies": {
     "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
-    "@types/vscode": "^1.100.0",
     "@typescript-eslint/eslint-plugin": "^8.31.1",
     "@typescript-eslint/parser": "^8.31.1",
     "@vscode/test-cli": "^0.0.10",
@@ -54,6 +53,11 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
+    "@types/vscode": "^1.75.0",
     "node-fetch": "^2.7.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tee-jagz/code-smeller.git"
   }
 }
