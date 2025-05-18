@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 const fetch = require('node-fetch'); // make sure it's in your deps
 
 async function analyzeWithGemini(context: vscode.ExtensionContext, code: string): Promise<string> {
-//   const API_KEY = 'AIzaSyDPUqIjp_dt8aZ6BflMvIDDu2NNQCbNZgs';
   const API_KEY = await context.secrets.get('GEMINI_API_KEY');
   if (!API_KEY) {
     return "GEMINI_API_KEY not found in environment variables.";
