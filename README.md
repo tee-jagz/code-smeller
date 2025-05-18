@@ -38,4 +38,4 @@ This extension contributes the following VSCode settings:
 ## 🐞 Known Issues
 
 - Markdown rendering may fail if network access to `marked.js` CDN is blocked
-- Large files may be truncated by token limits of
+- Large files may be truncated by token limits of the LLM
