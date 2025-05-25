@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { runLinter, LintStats } from './lintRunner';
-import { promises } from 'dns';
+// import { GoogleGenAI, Type } from "@google/genai";
 
 const fetch = require('node-fetch'); // make sure it's in your deps
 
@@ -12,12 +12,64 @@ function debounce<T extends (...args: any[]) => void>(fn: T, delay = 300): T {
   } as T;
 }
 
+function getInstruction(code: string): string{
+	return `
+		You are an Engineering Manager with 10 years of experience trying to help developers grow into senior engineers.
 
-async function analyzeWithGemini(context: vscode.ExtensionContext, code: string): Promise<string> {
+		Your task is to review the code below and provide constructive, actionable feedback.
+
+		You MUST use official documentation and widely-accepted best practices of the language, framework, or libraries used.
+
+		### Focus Areas
+
+		Identify and suggest improvements for:
+		1. Variable naming clarity and consistency
+		2. Refactoring opportunities, but ONLY where relevant:
+		- DRY violations
+		- Decomposition of large functions
+		- SRP (Single Responsibility Principle) violations
+		- Tight coupling or poor abstraction
+		- Poor or missing error handling
+		- Data clumps or long parameter lists
+		- Violations of separation of concerns
+		- Any patterns that make the code harder to read, test, or reuse
+
+		⚠️ Be succinct, practical, and helpful.
+		- Do **not** rewrite or restate the code.
+		- Do **not** suggest changes unless they will clearly improve the codebase or developer's skills.
+		- Avoid nitpicking or pedantic suggestions.
+		- Stay focused on what matters most.
+		- Try to give guiding instructions without actively writing the code
+		- Go straight to the review with no added sentence or introduction before
+
+
+		You MUST return your output strictly as a JSON object in this format:
+
+		\`\`\`json
+		{
+		"codeSmellScore": number,
+		"codeReview": string
+		}
+		\`\`\`
+
+		codeSmellScore is a smell score from 1 to 5 with 5 being code with terrible practices and 1 being clean code with no issues
+
+		Code to review:
+
+		\`\`\`
+		${code}
+		\`\`\`
+		`
+}
+
+
+
+async function analyzeWithGemini(context: vscode.ExtensionContext, code: string): Promise<any> {
   const API_KEY = await context.secrets.get('GEMINI_API_KEY');
   if (!API_KEY) {
     return "GEMINI_API_KEY not found in environment variables.";
   }
+
 
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`, {
     method: "POST",
@@ -29,32 +81,7 @@ async function analyzeWithGemini(context: vscode.ExtensionContext, code: string)
         {
           parts: [
             {
-              text: `
-You are an Engineering Manager with 10 years of experience trying to get your developers to a senior developer quickly.
-Review their code.
-You MUST use the official documentations as guide to the best practices of the language and framworks or libraries used
-Suggest improvements according to best coding standards:
-1. Variable name improvements
-2. Refactoring suggestions (DRY, SRP, decomposition)
-3. Any deviations from best practices
-4. Where types can be declared and how
-5. Other improvements you can think of based on official documentation of the language, framwork and library used or general programming concensus
-
-
-
-Return a structured response in Markdown.
-
-IMPORTANT: Do not rewrite the code. Just return suggestions of improvement for best coding practices without explicitly spelling out code as much as possible
-
-Try to be succinct and straight to the point
-
-Start by giving an overall smell score from 1 to 5 with 5 being the smelliest.
-
-Code:
-\`\`\`
-${code}
-\`\`\`
-Respond with clear suggestions.`
+              text: getInstruction(code)
             }
           ]
         }
@@ -62,12 +89,37 @@ Respond with clear suggestions.`
     })
   });
 
-  const json = await response.json();
-//   console.log(json)
-  return json?.candidates?.[0]?.content?.parts?.[0]?.text || "No feedback.";
+  const jsonResponse = await response.json();
+  let rawText = jsonResponse.candidates?.[0]?.content?.parts?.[0]?.text;
+
+rawText = rawText.trim();
+if (rawText.startsWith("```json") || rawText.startsWith("```")) {
+  rawText = rawText.replace(/^```json/, "").replace(/^```/, "").replace(/```$/, "").trim();
 }
 
-function getWebviewContent(markdownText: string): string {
+let parsedResult;
+try {
+  parsedResult = JSON.parse(rawText);
+} catch (e) {
+  console.error("Failed to parse Gemini response as JSON.", e, rawText);
+  return "Failed to parse Gemini output.";
+}
+
+return parsedResult;
+}
+
+function getWebviewContent(webview: vscode.Webview, extensionUri: vscode.Uri, score: number, markdownText: string): string {
+	const imagePath = vscode.Uri.joinPath(extensionUri, "resources", `img${score}.png`);
+    const imageUri = webview.asWebviewUri(imagePath);
+
+	const smellQuotes: Record<number, string> = {
+		1: "Shishishi~! This code’s tighter than a well-trimmed anchor rope!",           
+		2: "Oi... it’s decent, but somethin’s off in the wind.",                         
+		3: "Hnnngh! It’s not the worst, but it needs some serious polish.",             
+		4: "BLEGH! There’s too much goin’ on — clean it up or we’ll sink!",              
+		5: "THIS CODE’S A DISASTER! PATCH THE HOLES OR WE’RE GOING DOWN!!",             
+		};
+
 	const escapedMarkdown = markdownText
 	  .replace(/\\/g, "\\\\")
 	  .replace(/`/g, "\\`")
@@ -81,6 +133,8 @@ function getWebviewContent(markdownText: string): string {
 	  <title>Code Review</title>
 	</head>
 	<body>
+	  <img src="${imageUri}"  width="120" height="120" alt="Code Smell Score ${score}" />
+	  <p>${smellQuotes[score]}</p>
 	  <div id="content">Loading review...</div>
   
 	  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -133,27 +187,6 @@ class testProv implements vscode.WebviewViewProvider{
 			if (editor) this.debouncedUpdate(editor.document);
 			});
 
-
-		// vscode.workspace.onDidChangeTextDocument(
-		// 	async (e: vscode.TextDocumentChangeEvent) => {
-		// 		// 1. Lint / analyse the current contents
-		// 		const { errors, warnings } = await this.analyzeCode(
-		// 		e.document
-		// 		);
-
-		// 		// 2. Convert to “smell” score
-		// 		const score = this.getScore(errors, warnings);
-
-		// 		// 3. Refresh the sidebar
-		// 		if (this._view) {
-		// 		this._view.webview.html = this._getHtmlForWebview(
-		// 			this._view.webview,
-		// 			score
-		// 		);
-		// 		}
-		// 	}
-		// 	);
-
 			const activeDoc = vscode.window.activeTextEditor?.document;
 			if (activeDoc && !activeDoc.isUntitled) {
 			const { errors, warnings } = await this.analyzeCode(activeDoc);
@@ -200,7 +233,18 @@ class testProv implements vscode.WebviewViewProvider{
 
 		const imageUrl = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', imageFileName));
 		 
-		const message = score == 1 ? "Nice smelling syntax" : score == 2 ? "???" : score == 3 ? "Hmmm!!! Watch it!" : score == 4 ? "Your syntax stinks!" : "I am dying from your stinking syntax"
+		// const message = score == 1 ? "Nice clean syntax" : score == 2 ? "???" : score == 3 ? "Hmmm!!! Watch it!" : score == 4 ? "Your syntax stinks!" : "I am dying from your stinking syntax"
+		const smellQuotes: Record<number, string> = {
+			1: "Shishishi~! That code's cleaner than a Marine’s uniform!",           // Luffy
+			2: "Oi... something smells a bit off here.",                              // Zoro
+			3: "Hnnngh! This syntax is startin’ to reek!",                            // Sanji
+			4: "BLEGH! You tryin’ to poison me with this code?!",                     // Usopp
+			5: "THIS CODE SMELL’S KILLIN’ ME!!! I’M NOT GOIN’ OUT LIKE THIS!!!",     // Luffy or Usopp
+			};
+
+// Usage:
+const message = smellQuotes[score];
+
 		return `
 			<!DOCTYPE html>
 			<html lang="en">
@@ -209,7 +253,7 @@ class testProv implements vscode.WebviewViewProvider{
 				<title>Code Smell</title>
 			</head>
 			<body>
-				<div id="content">${message}</div>
+				<p id="content">${smellQuotes[score]}</p>
 				<img src=${imageUrl}>
 			</body>
 			</html>
@@ -264,7 +308,7 @@ context.subscriptions.push(
 		{ enableScripts: true }                // Disable JS for now
 	  );
 	  
-	panel.webview.html = getWebviewContent(result);
+	panel.webview.html = getWebviewContent(panel.webview, context.extensionUri, result.codeSmellScore, result.codeReview);
   });
 
 
