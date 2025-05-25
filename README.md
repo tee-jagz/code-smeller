@@ -32,7 +32,7 @@ Here’s what Code Smeller looks like in action:
 
 ![Code Smeller in Action](resources/codesmellerscreenshot.png)
 
-> 💡 Tip: You don’t need to manually run anything! Code Smeller updates the side panel _as you write_, giving you instant insight without breaking your flow.
+> 💡 Tip: You don’t need to manually run anything! Code Syntax Smeller updates in the left side panel _as you write_, giving you instant insight without breaking your flow.
 
 ---
 
