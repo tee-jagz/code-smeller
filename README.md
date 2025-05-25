@@ -32,6 +32,8 @@ Here’s what Code Smeller looks like in action:
 
 ![Code Smeller in Action](resources/codesmellerscreenshot.png)
 
+> 💡 Tip: You don’t need to manually run anything! Code Smeller updates the side panel _as you write_, giving you instant insight without breaking your flow.
+
 ---
 
 ## ⚙️ Extension Settings
@@ -66,8 +68,6 @@ Code Smeller assigns a **smell score** from 1 (clean) to 5 (disaster), using cus
 | 5     | ☠️ Code is lethal | <img src="resources/img5.png" width="60"> | “THIS CODE’S A DISASTER! PATCH THE HOLES!!”          |
 
 Each review starts with the appropriate image and quote, followed by a markdown-rendered breakdown of real, actionable feedback.
-
-> 💡 Tip: You don’t need to manually run anything! Code Smeller updates the side panel _as you write_, giving you instant insight without breaking your flow.
 
 ---
 
