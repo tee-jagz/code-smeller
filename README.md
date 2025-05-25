@@ -55,11 +55,11 @@ Code Smeller assigns a **smell score** from 1 (clean) to 5 (disaster), using cus
 
 | Score | Meaning           | Visual Expression                         | Quote                                                |
 | ----- | ----------------- | ----------------------------------------- | ---------------------------------------------------- |
-| 1     | ✨ Squeaky clean  | <img src="resources/img1.png" width="24"> | “Shishishi~! This code’s tighter than anchor rope!”  |
-| 2     | 🧐 Slightly off   | <img src="resources/img2.png" width="24"> | “Oi... it’s decent, but somethin’s off in the wind.” |
-| 3     | 😐 Needs cleanup  | <img src="resources/img3.png" width="24"> | “It’s not the worst, but it needs serious polish.”   |
-| 4     | 🤢 Smelly         | <img src="resources/img4.png" width="24"> | “Too much goin’ on — clean it up or we’ll sink!”     |
-| 5     | ☠️ Code is lethal | <img src="resources/img5.png" width="24"> | “THIS CODE’S A DISASTER! PATCH THE HOLES!!”          |
+| 1     | ✨ Squeaky clean  | <img src="resources/img1.png" width="48"> | “Shishishi~! This code’s tighter than anchor rope!”  |
+| 2     | 🧐 Slightly off   | <img src="resources/img2.png" width="48"> | “Oi... it’s decent, but somethin’s off in the wind.” |
+| 3     | 😐 Needs cleanup  | <img src="resources/img3.png" width="48"> | “It’s not the worst, but it needs serious polish.”   |
+| 4     | 🤢 Smelly         | <img src="resources/img4.png" width="48"> | “Too much goin’ on — clean it up or we’ll sink!”     |
+| 5     | ☠️ Code is lethal | <img src="resources/img5.png" width="48"> | “THIS CODE’S A DISASTER! PATCH THE HOLES!!”          |
 
 Each review starts with the appropriate image and quote, followed by a markdown-rendered breakdown of real, actionable feedback.
 
