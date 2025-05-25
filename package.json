@@ -10,10 +10,23 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:codeSmeller.smellCode"
+    "onCommand:codeSmeller.smellCode",
+    "onView:codeSmellerLiveSmell",
+    "onLanguage:python",
+    "onLanguage:javascript",
+    "onLanguage:typescript"
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "views": {
+      "explorer": [
+        {
+          "id": "codeSmellerLiveSmell",
+          "name": "Code Syntax Smeller",
+          "type": "webview"
+        }
+      ]
+    },
     "commands": [
       {
         "command": "codeSmeller.smellCode",
@@ -45,11 +58,11 @@
   "devDependencies": {
     "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
-    "@typescript-eslint/eslint-plugin": "^8.31.1",
-    "@typescript-eslint/parser": "^8.31.1",
+    "@typescript-eslint/eslint-plugin": "^8.32.1",
+    "@typescript-eslint/parser": "^8.32.1",
     "@vscode/test-cli": "^0.0.10",
     "@vscode/test-electron": "^2.5.2",
-    "eslint": "^9.25.1",
+    "eslint": "^9.27.0",
     "typescript": "^5.8.3"
   },
   "dependencies": {

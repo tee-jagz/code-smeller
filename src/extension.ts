@@ -1,5 +1,17 @@
 import * as vscode from 'vscode';
+import { runLinter, LintStats } from './lintRunner';
+import { promises } from 'dns';
+
 const fetch = require('node-fetch'); // make sure it's in your deps
+
+function debounce<T extends (...args: any[]) => void>(fn: T, delay = 300): T {
+  let timeout: NodeJS.Timeout;
+  return function (this: any, ...args: any[]) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => fn.apply(this, args), delay);
+  } as T;
+}
+
 
 async function analyzeWithGemini(context: vscode.ExtensionContext, code: string): Promise<string> {
   const API_KEY = await context.secrets.get('GEMINI_API_KEY');
@@ -86,10 +98,138 @@ function getWebviewContent(markdownText: string): string {
 	</html>
 	`;
   }
-  
+
+class testProv implements vscode.WebviewViewProvider{
+
+	public static readonly viewType = 'codeSmellerLiveSmell';
+
+	private _view?: vscode.WebviewView;
+
+	constructor(
+		private readonly _extensionUri: vscode.Uri
+	) {}
+
+	public async resolveWebviewView(
+		webviewView: vscode.WebviewView,
+		_context: vscode.WebviewViewResolveContext,
+		_token: vscode.CancellationToken,
+	) {
+		this._view = webviewView;
+
+		webviewView.webview.options = {
+			// Allow scripts in the webview
+			enableScripts: true,
+
+			localResourceRoots: [
+				this._extensionUri
+			]
+		};
+
+		vscode.workspace.onDidChangeTextDocument(e => {
+			this.debouncedUpdate(e.document);
+			});
+		
+		vscode.window.onDidChangeActiveTextEditor(editor => {
+			if (editor) this.debouncedUpdate(editor.document);
+			});
+
+
+		// vscode.workspace.onDidChangeTextDocument(
+		// 	async (e: vscode.TextDocumentChangeEvent) => {
+		// 		// 1. Lint / analyse the current contents
+		// 		const { errors, warnings } = await this.analyzeCode(
+		// 		e.document
+		// 		);
+
+		// 		// 2. Convert to “smell” score
+		// 		const score = this.getScore(errors, warnings);
+
+		// 		// 3. Refresh the sidebar
+		// 		if (this._view) {
+		// 		this._view.webview.html = this._getHtmlForWebview(
+		// 			this._view.webview,
+		// 			score
+		// 		);
+		// 		}
+		// 	}
+		// 	);
+
+			const activeDoc = vscode.window.activeTextEditor?.document;
+			if (activeDoc && !activeDoc.isUntitled) {
+			const { errors, warnings } = await this.analyzeCode(activeDoc);
+			const score = this.getScore(errors, warnings);
+			webviewView.webview.html = this._getHtmlForWebview(webviewView.webview, score);
+			}
+
+		// webviewView.webview.html = this._getHtmlForWebview(webviewView.webview, 1);
+	}
+
+	public getScore(errors: number, warnings: number){
+		if(errors > 1){
+			return 5
+		}
+		if(warnings == 0 && errors == 0) return 1;
+		if(warnings <= 10) return 2;
+		if(warnings <= 20) return 3;
+		if(warnings <= 30) return 4;
+		return 5;
+	}
+
+	public async analyzeCode(document: vscode.TextDocument){
+		const language = document.languageId;
+		const code = document.getText();
+		const state = await runLinter(language, code);
+
+		return state
+	}
+
+	private readonly debouncedUpdate = debounce(async (doc: vscode.TextDocument) => {
+		if (!this._view || doc.isUntitled || !["python", "javascript", "typescript"].includes(doc.languageId)) {
+			return;
+		}
+
+		const { errors, warnings } = await this.analyzeCode(doc);
+		const score = this.getScore(errors, warnings);
+
+		this._view.webview.html = this._getHtmlForWebview(this._view.webview, score);
+		}, 400);
+
+
+	private _getHtmlForWebview(webview: vscode.Webview, score: number): string {
+		const imageFileName = `img${score}.png`
+
+		const imageUrl = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', imageFileName));
+		 
+		const message = score == 1 ? "Nice smelling syntax" : score == 2 ? "???" : score == 3 ? "Hmmm!!! Watch it!" : score == 4 ? "Your syntax stinks!" : "I am dying from your stinking syntax"
+		return `
+			<!DOCTYPE html>
+			<html lang="en">
+			<head>
+				<meta charset="UTF-8">
+				<title>Code Smell</title>
+			</head>
+			<body>
+				<div id="content">${message}</div>
+				<img src=${imageUrl}>
+			</body>
+			</html>
+		`;
+	}
+}
 
 export function activate(context: vscode.ExtensionContext) {
   console.log("Code Smeller extension is active 🚀");
+  const provider = new testProv(context.extensionUri)
+//   const sidePanel = vscode.window.registerWebviewViewProvider(
+// 	'codeSmellerLiveSmell'
+// 	, provider
+//   )
+
+context.subscriptions.push(
+	vscode.window.registerWebviewViewProvider('codeSmellerLiveSmell', provider)
+  );
+
+//   sidePanel.webview.html = getSmellScoreView(2);
 
   const setApiKeyCommand = vscode.commands.registerCommand('codeSmeller.setApiKey', async () => {
 	const key = await vscode.window.showInputBox({
@@ -126,6 +266,8 @@ export function activate(context: vscode.ExtensionContext) {
 	  
 	panel.webview.html = getWebviewContent(result);
   });
+
+
 
   context.subscriptions.push(disposable, setApiKeyCommand);
 }
