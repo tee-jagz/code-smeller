@@ -13,18 +13,22 @@ All feedback is shown in a friendly markdown-powered side panel — complete wit
 ## ✨ Features
 
 - ✅ One-click code reviews using Gemini (via Google AI Studio)
-- ✅ Feedback with concrete, useful suggestions (not pedantic!)
-- ✅ Smell Score (1–5) with themed quotes for extra flair
+- ✅ Real-time smell detection as you type — see feedback instantly in the sidebar
+- ✅ Smell Score (1–5) with themed quotes and custom Luffy images
+- ✅ Detailed suggestions for naming, structure, and best practices
 - ✅ Supports JavaScript, TypeScript, Python
 - ✅ Secure API key management via VS Code SecretStorage
-- ✅ Local image support for smell score illustrations
-- ✅ Near real-time syntax analysis while editing (experimental)
+- ✅ Lightweight and non-intrusive design
 
 ---
 
 ## 🖥️ Live Preview
 
-Here’s what a typical code review looks like inside VS Code with Code Smeller:
+Here’s what Code Smeller looks like in action:
+
+- **Left Panel**: Your active code file
+- **Bottom Left**: Smell icon indicating overall score (hover for quote)
+- **Right Sidebar**: Live, markdown-formatted suggestions with scoring and themed image
 
 ![Code Smeller in Action](resources/codesmellerscreenshot.png)
 
@@ -62,6 +66,8 @@ Code Smeller assigns a **smell score** from 1 (clean) to 5 (disaster), using cus
 | 5     | ☠️ Code is lethal | <img src="resources/img5.png" width="60"> | “THIS CODE’S A DISASTER! PATCH THE HOLES!!”          |
 
 Each review starts with the appropriate image and quote, followed by a markdown-rendered breakdown of real, actionable feedback.
+
+> 💡 Tip: You don’t need to manually run anything! Code Smeller updates the side panel _as you write_, giving you instant insight without breaking your flow.
 
 ---
 
