@@ -1,6 +1,8 @@
 # 🧼 Code Smeller
 
-**Code Smeller** is a fun, lightweight VS Code extension that helps developers write cleaner, more maintainable code using LLM-powered analysis. It reviews your code for:
+**Code Smeller** is a fun, lightweight VS Code extension that helps developers write cleaner, more maintainable code using both **LLM-powered reviews** and **your editor's built-in linting system**.
+
+It reviews your code for:
 
 - Poor or vague variable naming
 - Refactoring opportunities (DRY, SRP, etc.)
@@ -12,11 +14,11 @@ All feedback is shown in a friendly markdown-powered side panel — complete wit
 
 ## ✨ Features
 
-- ✅ One-click code reviews using Gemini (via Google AI Studio)
-- ✅ Real-time smell detection as you type — see feedback instantly in the sidebar
+- ✅ **Live smell detection** using VS Code's own diagnostic engine — no extra linters required
+- ✅ One-click code reviews powered by Gemini (optional)
 - ✅ Smell Score (1–5) with themed quotes and custom Luffy images
-- ✅ Detailed suggestions for naming, structure, and best practices
-- ✅ Supports JavaScript, TypeScript, Python
+- ✅ Real-time updates as you type — see your score and suggestions instantly
+- ✅ Supports any language with active VS Code diagnostics (JS, TS, Python, etc.)
 - ✅ Secure API key management via VS Code SecretStorage
 - ✅ Lightweight and non-intrusive design
 
@@ -32,7 +34,10 @@ Here’s what Code Smeller looks like in action:
 
 ![Code Smeller in Action](resources/codesmellerscreenshot.png)
 
-> 💡 Tip: You don’t need to manually run anything! Code Syntax Smeller updates in the left side panel _as you write_, giving you instant insight without breaking your flow.
+> 💡 **Tips**  
+> – You don’t need to manually run anything! Code Smeller updates in the side panel _as you write_, giving you instant insight without breaking your flow.  
+> – Linting quality depends on the language extension and settings you have installed — ensure tools like ESLint or the Python extension are properly set up in your workspace.  
+> – For deeper insights, you can trigger a Gemini-powered review anytime via the Command Palette.
 
 ---
 
@@ -75,8 +80,7 @@ Each review starts with the appropriate image and quote, followed by a markdown-
 
 - Markdown rendering may fail if CDN access to `marked.js` is blocked
 - Very large files may be truncated due to token limits in the LLM
-- TypeScript support depends on proper parser settings in the workspace
-- Linting for languages beyond JS/TS/Python is not yet supported
+- Live Syntax code smell only supports JavaScript, TypeScript, and Python for now
 
 ---
 

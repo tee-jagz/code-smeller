@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
-import { runLinter, LintStats } from './lintRunner';
+// import { runLinter, LintStats } from './lintRunner';
+// import { connected } from 'process';
 // import { GoogleGenAI, Type } from "@google/genai";
 
 const fetch = require('node-fetch'); // make sure it's in your deps
@@ -197,7 +198,11 @@ class testProv implements vscode.WebviewViewProvider{
 
 			const activeDoc = vscode.window.activeTextEditor?.document;
 			if (activeDoc && !activeDoc.isUntitled) {
-			const { errors, warnings } = await this.analyzeCode(activeDoc);
+			// const { errors, warnings } = await this.analyzeCode(activeDoc);
+			const diagnostics = vscode.languages.getDiagnostics(activeDoc.uri);			
+			let errors = diagnostics.filter(d => d.severity === vscode.DiagnosticSeverity.Error).length;
+			let warnings = diagnostics.filter(d => d.severity === vscode.DiagnosticSeverity.Warning).length;
+		
 			const score = this.getScore(errors, warnings);
 			webviewView.webview.html = this._getHtmlForWebview(webviewView.webview, score);
 			}
@@ -206,37 +211,68 @@ class testProv implements vscode.WebviewViewProvider{
 	}
 
 	public getScore(errors: number, warnings: number){
-		if(errors > 1){
+		// console.log(`Scoring... The errors are ${errors} and warnings are ${warnings}`)
+		if(errors > 0){
 			return 5
 		}
 		if(warnings == 0 && errors == 0) return 1;
-		if(warnings <= 10) return 2;
-		if(warnings <= 20) return 3;
-		if(warnings <= 30) return 4;
+		if(warnings <= 5) return 2;
+		if(warnings <= 10) return 3;
+		if(warnings <= 15) return 4;
 		return 5;
 	}
 
-	public async analyzeCode(document: vscode.TextDocument){
-		const language = document.languageId;
-		const code = document.getText();
-		const state = await runLinter(language, code);
+	// public async analyzeCode(document: vscode.TextDocument){
+	// 	const language = document.languageId;
+	// 	const code = document.getText();
+	// 	const state = await runLinter(language, code);
 
-		return state
-	}
+	// 	return state
+	// }
 
 	private readonly debouncedUpdate = debounce(async (doc: vscode.TextDocument) => {
-		if (!this._view || doc.isUntitled || !["python", "javascript", "typescript"].includes(doc.languageId)) {
+		if (!this._view || doc.isUntitled || !["python", "javascript", "typescript", "typescriptreact", "javascriptreact"].includes(doc.languageId)) {
+			console.log(`Sorry not supported.\n Doc languageId is ${doc.languageId}`)
+			this._view.webview.html = this._getHtmlForWebview(this._view.webview, 0, true);
 			return;
 		}
 
-		const { errors, warnings } = await this.analyzeCode(doc);
+		const diagnostics = vscode.languages.getDiagnostics(doc.uri);
+		// let errors: number, warnings: number;
+		let errors = diagnostics.filter(d => d.severity === vscode.DiagnosticSeverity.Error).length;
+		let warnings = diagnostics.filter(d => d.severity === vscode.DiagnosticSeverity.Warning).length;
+		// console.log(`No of Errors: ${errors}`)
+		// console.log(`No of Warnings: ${warnings}`)
+		// console.log(diagnostics)
+		// }
+		// else{
+		// 	let { errors, warnings } = await this.analyzeCode(doc);
+		// }
 		const score = this.getScore(errors, warnings);
 
 		this._view.webview.html = this._getHtmlForWebview(this._view.webview, score);
 		}, 400);
 
 
-	private _getHtmlForWebview(webview: vscode.Webview, score: number): string {
+	private _getHtmlForWebview(webview: vscode.Webview, score: number = 0, noSupport: boolean = false): string {
+		if(noSupport){
+			const imageUrl = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'sorry.png'));
+			return `
+				<!DOCTYPE html>
+				<html lang="en">
+				<head>
+					<meta charset="UTF-8">
+					<title>Code Smell</title>
+				</head>
+				<body>
+
+					<p id="content">GYAAAH!! I can’t read this language!! I’m sorry!! I’ll try harder next time, okay?!</p>
+					<img src=${imageUrl}>
+				</body>
+				</html>
+			`;
+
+		}
 		const imageFileName = `img${score}.png`
 
 		const imageUrl = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', imageFileName));
@@ -250,8 +286,8 @@ class testProv implements vscode.WebviewViewProvider{
 			5: "THIS CODE SMELL’S KILLIN’ ME!!! I’M NOT GOIN’ OUT LIKE THIS!!!",     // Luffy or Usopp
 			};
 
-// Usage:
-const message = smellQuotes[score];
+		// Usage:
+		const message = smellQuotes[score];
 
 		return `
 			<!DOCTYPE html>
@@ -261,6 +297,7 @@ const message = smellQuotes[score];
 				<title>Code Smell</title>
 			</head>
 			<body>
+
 				<p id="content">${smellQuotes[score]}</p>
 				<img src=${imageUrl}>
 			</body>
