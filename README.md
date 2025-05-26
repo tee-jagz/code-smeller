@@ -14,10 +14,10 @@ All feedback is shown in a friendly markdown-powered side panel — complete wit
 
 ## ✨ Features
 
-- ✅ **Live smell detection** using VS Code's own diagnostic engine — no extra linters required
+- ✅ **Live smell detection** using VS Code's own diagnostic engine. No extra linters required
 - ✅ One-click code reviews powered by Gemini (optional)
 - ✅ Smell Score (1–5) with themed quotes and custom Luffy images
-- ✅ Real-time updates as you type — see your score and suggestions instantly
+- ✅ Real-time syntax smell score updates as you type
 - ✅ Supports any language with active VS Code diagnostics (JS, TS, Python, etc.)
 - ✅ Secure API key management via VS Code SecretStorage
 - ✅ Lightweight and non-intrusive design
@@ -34,10 +34,11 @@ Here’s what Code Smeller looks like in action:
 
 ![Code Smeller in Action](resources/codesmellerscreenshot.png)
 
-> 💡 **Tips**  
-> – You don’t need to manually run anything! Code Smeller updates in the side panel _as you write_, giving you instant insight without breaking your flow.  
-> – Linting quality depends on the language extension and settings you have installed — ensure tools like ESLint or the Python extension are properly set up in your workspace.  
-> – For deeper insights, you can trigger a Gemini-powered review anytime via the Command Palette.
+> 💡 **Tips**
+>
+> - You don’t need to manually run anything! Code Smeller updates in the side panel _as you write_, giving you instant insight without breaking your flow.
+> - Linting quality depends on the language extension and settings you have installed. Ensure tools like ESLint or the Python extension are properly set up in your workspace.
+> - For deeper insights, you can trigger a Gemini-powered review anytime via the Command Palette.
 
 ---
 
