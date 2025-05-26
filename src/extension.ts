@@ -89,7 +89,15 @@ async function analyzeWithGemini(context: vscode.ExtensionContext, code: string)
     })
   });
 
+  if (!response.ok) {
+	const errorText = await response.text();
+	console.error("Gemini API error:", response.status, errorText);
+	return `❌ Gemini API failed with ${response.status}`;
+	}
+ 
+
   const jsonResponse = await response.json();
+  console.log(jsonResponse)
   let rawText = jsonResponse.candidates?.[0]?.content?.parts?.[0]?.text;
 
 rawText = rawText.trim();
@@ -308,6 +316,20 @@ context.subscriptions.push(
 		{ enableScripts: true }                // Disable JS for now
 	  );
 	  
+
+	  if (typeof result === "string") {
+			// error message
+			panel.webview.html = `
+			<!DOCTYPE html>
+			<html>
+			<body>
+				<h2>Gemini Analysis Failed</h2>
+				<pre>${result}</pre>
+			</body>
+			</html>
+			`;
+			return;
+		}
 	panel.webview.html = getWebviewContent(panel.webview, context.extensionUri, result.codeSmellScore, result.codeReview);
   });
 

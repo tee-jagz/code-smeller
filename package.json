@@ -1,8 +1,10 @@
 {
   "name": "code-smeller",
-  "displayName": "code_smeller",
-  "description": "",
-  "version": "0.0.1",
+  "displayName": "Code Smeller",
+  "publisher": "TolulopeJegede",
+  "description": "LLM-powered VS Code extension that scores your code quality, detects smells, and delivers smart, fun reviews in real time.",
+  "icon": "resources/img3.png",
+  "version": "0.0.3",
   "engines": {
     "vscode": "^1.75.0"
   },
@@ -56,18 +58,19 @@
     "test": "vscode-test"
   },
   "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
     "@types/mocha": "^10.0.10",
-    "@types/node": "20.x",
-    "@typescript-eslint/eslint-plugin": "^8.32.1",
-    "@typescript-eslint/parser": "^8.32.1",
+    "@types/node": "^20.17.50",
     "@vscode/test-cli": "^0.0.10",
     "@vscode/test-electron": "^2.5.2",
-    "eslint": "^9.27.0",
     "typescript": "^5.8.3"
   },
   "dependencies": {
     "@google/genai": "^1.0.1",
     "@types/vscode": "^1.75.0",
+    "@typescript-eslint/eslint-plugin": "^8.32.1",
+    "@typescript-eslint/parser": "^8.32.1",
+    "eslint": "^9.27.0",
     "node-fetch": "^2.7.0"
   },
   "repository": {

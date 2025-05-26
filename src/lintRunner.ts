@@ -1,7 +1,4 @@
 // src/lintRunner.ts
-import { ESLint } from "eslint";
-import * as tsParser from "@typescript-eslint/parser";
-import tsPlugin from "@typescript-eslint/eslint-plugin";
 import { tmpdir } from "os";
 import * as fs from "fs/promises";
 import * as path from "path";
@@ -21,9 +18,8 @@ export async function runLinter(
 ): Promise<LintStats> {
   switch (languageId) {
     case "javascript":
-      return await lintWithESLint(code, false);
     case "typescript":
-      return await lintWithESLint(code, true);
+      return await lintWithBiome(languageId, code);
     case "python":
       return await lintWithPylint(code);
     default:
@@ -31,39 +27,40 @@ export async function runLinter(
   }
 }
 
-async function lintWithESLint(code: string, isTypeScript: boolean): Promise<LintStats> {
-  const eslint = new ESLint({
-    overrideConfigFile: null,
-    overrideConfig: {
-      languageOptions: {
-        parser: isTypeScript ? (tsParser as any) : undefined, 
-        sourceType: "module",
-        ecmaVersion: 2022,
-      },
-      plugins: isTypeScript ? { "@typescript-eslint": tsPlugin as any } : {},
-      rules: {
-        "@typescript-eslint/explicit-function-return-type": "warn",
-        "@typescript-eslint/no-floating-promises": "warn",
-        "@typescript-eslint/await-thenable": "warn",
-        "@typescript-eslint/no-explicit-any": "warn",
-        "@typescript-eslint/ban-types": "warn",
-      },
-    },
-  });
+async function lintWithBiome(languageId: string, code: string): Promise<LintStats> {
+  const tempDir = await fs.mkdtemp(path.join(tmpdir(), "biome-"));
+  const ext = languageId === "typescript" ? "ts" : "js";
+  const tempFile = path.join(tempDir, `lint.${ext}`);
+  await fs.writeFile(tempFile, code, "utf-8");
 
-  const results = await eslint.lintText(code, {
-    filePath: isTypeScript ? "file.ts" : "file.js",
-  });
+  try {
+    const { stdout, stderr } = await exec(`npx biome lint --no-ignore --files-max-size=1mb --output-format json "${tempFile}"`);
 
-  let errors = 0;
-  let warnings = 0;
-  for (const r of results) {
-    errors += r.errorCount;
-    warnings += r.warningCount;
+    if (!stdout?.trim()) {
+      console.error("Biome lint returned empty output.");
+      if (stderr) console.error("Biome stderr:", stderr);
+      return { errors: 0, warnings: 0 };
+    }
+
+    const output = JSON.parse(stdout);
+
+    let errors = 0;
+    let warnings = 0;
+
+    for (const diag of output.diagnostics || []) {
+      if (diag.severity === "error") errors++;
+      if (diag.severity === "warning") warnings++;
+    }
+
+    return { errors, warnings };
+  } catch (err: any) {
+    console.error("Biome lint failed:", err.message);
+    return { errors: 0, warnings: 0 };
+  } finally {
+    await fs.rm(tempDir, { recursive: true, force: true });
   }
-
-  return { errors, warnings };
 }
+
 
 async function lintWithPylint(code: string): Promise<LintStats> {
   const tempFile = path.join(tmpdir(), `lint-${Date.now()}.py`);
