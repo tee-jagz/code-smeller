@@ -59,7 +59,7 @@ This extension contributes the following VS Code settings:
 
 | Command                                             | Description                                              |
 | --------------------------------------------------- | -------------------------------------------------------- |
-| `Code Smeller: Smell Code`                          | Run a Gemini-powered code review on the current file     |
+| `Smell Code`                                        | Run a Gemini-powered code review on the current file     |
 | `Code Smeller: Set Gemini API Key`                  | Securely store your API key using VS Code SecretStorage  |
 | `Code Smeller: Add Language To Supported Languages` | Adds the current file’s languageId to the supported list |
 
