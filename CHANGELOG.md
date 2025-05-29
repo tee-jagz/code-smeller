@@ -7,3 +7,21 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [Unreleased]
 
 - Initial release
+
+## [0.0.4]
+
+### Changed
+
+- Changed the linter from eslint and pylint to whatever is used by vscode
+
+## [0.0.5]
+
+### Added
+
+### Changed
+
+### Removed
+
+### Deprecated
+
+### Security

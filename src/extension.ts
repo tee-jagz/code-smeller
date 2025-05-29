@@ -1,9 +1,21 @@
 import * as vscode from 'vscode';
-// import { runLinter, LintStats } from './lintRunner';
-// import { connected } from 'process';
-// import { GoogleGenAI, Type } from "@google/genai";
+import * as crypto from 'crypto';
+const fetch = require('node-fetch');
 
-const fetch = require('node-fetch'); // make sure it's in your deps
+let smellReviewPanel: vscode.WebviewPanel | undefined;
+
+let config = vscode.workspace.getConfiguration("codeSmeller")
+let supportedLanguages = Object.values(config.get<string[]>("supportedLanguages")) || []
+
+function refreshSupportedLanguages() {
+  config = vscode.workspace.getConfiguration("codeSmeller");
+  supportedLanguages = Object.values(config.get<string[]>("supportedLanguages")) || []
+}
+
+function hashCode(code: string): string {
+  return crypto.createHash('sha256').update(code).digest('hex');
+}
+
 
 function debounce<T extends (...args: any[]) => void>(fn: T, delay = 300): T {
   let timeout: NodeJS.Timeout;
@@ -12,6 +24,36 @@ function debounce<T extends (...args: any[]) => void>(fn: T, delay = 300): T {
     timeout = setTimeout(() => fn.apply(this, args), delay);
   } as T;
 }
+
+
+function cacheReview(
+  context: vscode.ExtensionContext,
+  code: string,
+  review: string
+) {
+  const key = hashCode(code);
+  const expiresAt = Date.now() + 3 * 24 * 60 * 60 * 1000;
+  context.globalState.update(key, { review, expiresAt });
+}
+
+
+export function deactivate() {
+  vscode.workspace.getConfiguration().update("codeSmellerCache", {}, true);
+}
+
+
+function getCachedReview(
+  context: vscode.ExtensionContext,
+  code: string
+): string | null {
+  const key = hashCode(code);
+  const cached = context.globalState.get<{ review: string; expiresAt: number }>(key);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.review;
+  }
+  return null;
+}
+
 
 function getInstruction(code: string): string{
 	return `
@@ -64,58 +106,59 @@ function getInstruction(code: string): string{
 }
 
 
-
 async function analyzeWithGemini(context: vscode.ExtensionContext, code: string): Promise<any> {
-  const API_KEY = await context.secrets.get('GEMINI_API_KEY');
-  if (!API_KEY) {
-    return "GEMINI_API_KEY not found in environment variables.";
-  }
-
-
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      contents: [
-        {
-          parts: [
-            {
-              text: getInstruction(code)
-            }
-          ]
-        }
-      ]
-    })
-  });
-
-  if (!response.ok) {
-	const errorText = await response.text();
-	console.error("Gemini API error:", response.status, errorText);
-	return `❌ Gemini API failed with ${response.status}`;
+	vscode.window.showInformationMessage("Sending code to Gemini...");
+	const API_KEY = await context.secrets.get('GEMINI_API_KEY');
+	if (!API_KEY) {
+		return "GEMINI_API_KEY not found in environment variables.";
 	}
- 
 
-  const jsonResponse = await response.json();
-  console.log(jsonResponse)
-  let rawText = jsonResponse.candidates?.[0]?.content?.parts?.[0]?.text;
 
-rawText = rawText.trim();
-if (rawText.startsWith("```json") || rawText.startsWith("```")) {
-  rawText = rawText.replace(/^```json/, "").replace(/^```/, "").replace(/```$/, "").trim();
+	const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`, {
+		method: "POST",
+		headers: {
+		"Content-Type": "application/json"
+		},
+		body: JSON.stringify({
+		contents: [
+			{
+			parts: [
+				{
+				text: getInstruction(code)
+				}
+			]
+			}
+		]
+		})
+	});
+
+	if (!response.ok) {
+		const errorText = await response.text();
+		console.error("Gemini API error:", response.status, errorText);
+		return `❌ Gemini API failed with ${response.status}`;
+		}
+	
+
+	const jsonResponse = await response.json();
+	console.log(jsonResponse)
+	let rawText = jsonResponse.candidates?.[0]?.content?.parts?.[0]?.text;
+
+	rawText = rawText.trim();
+	if (rawText.startsWith("```json") || rawText.startsWith("```")) {
+	rawText = rawText.replace(/^```json/, "").replace(/^```/, "").replace(/```$/, "").trim();
+	}
+
+	let parsedResult;
+	try {
+	parsedResult = JSON.parse(rawText);
+	} catch (e) {
+	console.error("Failed to parse Gemini response as JSON.", e, rawText);
+	return "Failed to parse Gemini output.";
+	}
+
+	return parsedResult;
 }
 
-let parsedResult;
-try {
-  parsedResult = JSON.parse(rawText);
-} catch (e) {
-  console.error("Failed to parse Gemini response as JSON.", e, rawText);
-  return "Failed to parse Gemini output.";
-}
-
-return parsedResult;
-}
 
 function getWebviewContent(webview: vscode.Webview, extensionUri: vscode.Uri, score: number, markdownText: string): string {
 	const imagePath = vscode.Uri.joinPath(extensionUri, "resources", `img${score}.png`);
@@ -160,9 +203,10 @@ function getWebviewContent(webview: vscode.Webview, extensionUri: vscode.Uri, sc
 	</body>
 	</html>
 	`;
-  }
+}
 
-class testProv implements vscode.WebviewViewProvider{
+
+class syntaxSmeller implements vscode.WebviewViewProvider{
 
 	public static readonly viewType = 'codeSmellerLiveSmell';
 
@@ -180,7 +224,6 @@ class testProv implements vscode.WebviewViewProvider{
 		this._view = webviewView;
 
 		webviewView.webview.options = {
-			// Allow scripts in the webview
 			enableScripts: true,
 
 			localResourceRoots: [
@@ -222,32 +265,17 @@ class testProv implements vscode.WebviewViewProvider{
 		return 5;
 	}
 
-	// public async analyzeCode(document: vscode.TextDocument){
-	// 	const language = document.languageId;
-	// 	const code = document.getText();
-	// 	const state = await runLinter(language, code);
-
-	// 	return state
-	// }
-
 	private readonly debouncedUpdate = debounce(async (doc: vscode.TextDocument) => {
-		if (!this._view || doc.isUntitled || !["python", "javascript", "typescript", "typescriptreact", "javascriptreact"].includes(doc.languageId)) {
+		if (!this._view || doc.isUntitled || !supportedLanguages.includes(doc.languageId)) {
 			console.log(`Sorry not supported.\n Doc languageId is ${doc.languageId}`)
 			this._view.webview.html = this._getHtmlForWebview(this._view.webview, 0, true);
 			return;
 		}
 
 		const diagnostics = vscode.languages.getDiagnostics(doc.uri);
-		// let errors: number, warnings: number;
+		
 		let errors = diagnostics.filter(d => d.severity === vscode.DiagnosticSeverity.Error).length;
 		let warnings = diagnostics.filter(d => d.severity === vscode.DiagnosticSeverity.Warning).length;
-		// console.log(`No of Errors: ${errors}`)
-		// console.log(`No of Warnings: ${warnings}`)
-		// console.log(diagnostics)
-		// }
-		// else{
-		// 	let { errors, warnings } = await this.analyzeCode(doc);
-		// }
 		const score = this.getScore(errors, warnings);
 
 		this._view.webview.html = this._getHtmlForWebview(this._view.webview, score);
@@ -277,13 +305,12 @@ class testProv implements vscode.WebviewViewProvider{
 
 		const imageUrl = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', imageFileName));
 		 
-		// const message = score == 1 ? "Nice clean syntax" : score == 2 ? "???" : score == 3 ? "Hmmm!!! Watch it!" : score == 4 ? "Your syntax stinks!" : "I am dying from your stinking syntax"
 		const smellQuotes: Record<number, string> = {
-			1: "Shishishi~! That code's cleaner than a Marine’s uniform!",           // Luffy
-			2: "Oi... something smells a bit off here.",                              // Zoro
-			3: "Hnnngh! This syntax is startin’ to reek!",                            // Sanji
-			4: "BLEGH! You tryin’ to poison me with this code?!",                     // Usopp
-			5: "THIS CODE SMELL’S KILLIN’ ME!!! I’M NOT GOIN’ OUT LIKE THIS!!!",     // Luffy or Usopp
+			1: "Shishishi~! That code's cleaner than a Marine’s uniform!",
+			2: "Oi... something smells a bit off here.",
+			3: "Hnnngh! This syntax is startin’ to reek!",
+			4: "BLEGH! You tryin’ to poison me with this code?!",                    
+			5: "THIS CODE SMELL’S KILLIN’ ME!!! I’M NOT GOIN’ OUT LIKE THIS!!!",
 			};
 
 		// Usage:
@@ -306,71 +333,117 @@ class testProv implements vscode.WebviewViewProvider{
 	}
 }
 
-export function activate(context: vscode.ExtensionContext) {
-  console.log("Code Smeller extension is active 🚀");
-  const provider = new testProv(context.extensionUri)
-//   const sidePanel = vscode.window.registerWebviewViewProvider(
-// 	'codeSmellerLiveSmell'
-// 	, provider
-//   )
 
-context.subscriptions.push(
-	vscode.window.registerWebviewViewProvider('codeSmellerLiveSmell', provider)
-  );
-
-//   sidePanel.webview.html = getSmellScoreView(2);
-
-  const setApiKeyCommand = vscode.commands.registerCommand('codeSmeller.setApiKey', async () => {
-	const key = await vscode.window.showInputBox({
-	  prompt: 'Enter your Gemini API key',
-	  password: true,
-	  ignoreFocusOut: true
-	});
-  
-	if (key) {
-	  await context.secrets.store('GEMINI_API_KEY', key);
-	  vscode.window.showInformationMessage("Gemini API key saved.");
+async function smellCode(context: vscode.ExtensionContext, code:string) {
+	const cached = getCachedReview(context, code);
+	if(cached){
+		return cached;
 	}
-  });
-  
-  
-  let disposable = vscode.commands.registerCommand('codeSmeller.smellCode', async () => {
-	console.log("Running Gemini code review...");
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) {
-      vscode.window.showInformationMessage("No file open.");
-      return;
-    }
 
-    const code = editor.document.getText();
-    vscode.window.showInformationMessage("Sending code to Gemini...");
-    const result = await analyzeWithGemini(context, code);
+	const review = await analyzeWithGemini(context, code);
+	cacheReview(context, code, review);
+	return review;
+}
 
-    const panel = vscode.window.createWebviewPanel(
-		'codeSmellerReview',                      // internal ID
-		'Code Smeller Review',                   // Title
-		vscode.ViewColumn.Beside,               // Side panel
-		{ enableScripts: true }                // Disable JS for now
-	  );
-	  
 
-	  if (typeof result === "string") {
-			// error message
-			panel.webview.html = `
-			<!DOCTYPE html>
-			<html>
-			<body>
-				<h2>Gemini Analysis Failed</h2>
-				<pre>${result}</pre>
-			</body>
-			</html>
-			`;
+function showReviewPanel(context: vscode.ExtensionContext, content:any ){
+	const panelTitle = "Code Smeller Review"
+
+	if(smellReviewPanel){
+		smellReviewPanel.reveal(vscode.ViewColumn.Beside);
+		smellReviewPanel.webview.html = getWebviewContent(smellReviewPanel.webview, context.extensionUri, content.codeSmellScore, content.codeReview)
+	} else {
+		smellReviewPanel = vscode.window.createWebviewPanel(
+			'codeSmellerReview',                      // internal ID
+			panelTitle,                   // Title
+			vscode.ViewColumn.Beside,               // Side panel
+			{ enableScripts: true }                // Disable JS for now
+		);
+		
+
+		if (typeof content === "string") {
+				// error message
+				smellReviewPanel.webview.html = `
+				<!DOCTYPE html>
+				<html>
+				<body>
+					<h2>Gemini Analysis Failed</h2>
+					<pre>${content}</pre>
+				</body>
+				</html>
+				`;
+				return;
+			}
+		smellReviewPanel.webview.html = getWebviewContent(smellReviewPanel.webview, context.extensionUri, content.codeSmellScore, content.codeReview);
+
+		smellReviewPanel.onDidDispose(() => {
+			smellReviewPanel = undefined;
+		});
+	};
+	}
+
+
+
+export function activate(context: vscode.ExtensionContext) {
+	console.log("Code Smeller extension is active 🚀");
+
+	const provider = new syntaxSmeller(context.extensionUri)
+
+	context.subscriptions.push(
+		vscode.window.registerWebviewViewProvider('codeSmellerLiveSmell', provider)
+	);
+
+	const setApiKeyCommand = vscode.commands.registerCommand('codeSmeller.setApiKey', async () => {
+		const key = await vscode.window.showInputBox({
+		prompt: 'Enter your Gemini API key',
+		password: true,
+		ignoreFocusOut: true
+		});
+	
+		if (key) {
+		await context.secrets.store('GEMINI_API_KEY', key);
+		vscode.window.showInformationMessage("Gemini API key saved.");
+		}
+	});
+
+
+	const addSupportedLanguage = vscode.commands.registerCommand("codeSmeller.addLanguage", async () => {
+		const editor = vscode.window.activeTextEditor;
+		if (!editor) {
+			vscode.window.showErrorMessage("Open a file to detect its language.")
 			return;
 		}
-	panel.webview.html = getWebviewContent(panel.webview, context.extensionUri, result.codeSmellScore, result.codeReview);
-  });
 
+		const langid = editor.document.languageId;
+		console.log(`Supported Languages ${supportedLanguages}\nTypeof: ${typeof supportedLanguages}`)
 
+		if(supportedLanguages.includes(langid)){
+			vscode.window.showInformationMessage(`"${langid}" is already a supported language.`)
+			return;
+		}
 
-  context.subscriptions.push(disposable, setApiKeyCommand);
+		const updatedSupportedLanguages = {...supportedLanguages, langid};
+
+		await config.update("supportedLanguages", updatedSupportedLanguages, vscode.ConfigurationTarget.Global);
+		refreshSupportedLanguages()
+		vscode.window.showInformationMessage(`"${langid}" now supported.`)
+		}
+	)	
+	
+	let codeReviewPanel = vscode.commands.registerCommand('codeSmeller.smellCode', async () => {
+		
+		const editor = vscode.window.activeTextEditor;
+		if (!editor) {
+		vscode.window.showInformationMessage("No file open.");
+		return;
+		}
+
+		const code = editor.document.getText();
+		// vscode.window.showInformationMessage("Sending code to Gemini...");
+		const result = await smellCode(context, code);
+
+		showReviewPanel(context, result)
+	});
+
+	context.subscriptions.push(codeReviewPanel, setApiKeyCommand, addSupportedLanguage);
 }

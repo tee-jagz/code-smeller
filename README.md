@@ -18,6 +18,8 @@ All feedback is shown in a friendly markdown-powered side panel — complete wit
 - ✅ One-click code reviews powered by Gemini (optional)
 - ✅ Smell Score (1–5) with themed quotes and custom Luffy images
 - ✅ Real-time syntax smell score updates as you type
+- ✅ Dynamic caching — reviews are cached per file, refreshed every 3 days or on VS Code close
+- ✅ User-defined supported languages with Code Smeller: Add Language
 - ✅ Supports any language with active VS Code diagnostics (JS, TS, Python, etc.)
 - ✅ Secure API key management via VS Code SecretStorage
 - ✅ Lightweight and non-intrusive design
@@ -30,7 +32,7 @@ Here’s what Code Smeller looks like in action:
 
 - **Left Panel**: Your active code file
 - **Bottom Left**: Smell icon indicating overall score (hover for quote)
-- **Right Sidebar**: Live, markdown-formatted suggestions with scoring and themed image
+- **Right Panel**: Live, markdown-formatted suggestions with scoring and themed image
 
 ![Code Smeller in Action](resources/codesmellerscreenshot.png)
 
@@ -46,18 +48,20 @@ Here’s what Code Smeller looks like in action:
 
 This extension contributes the following VS Code settings:
 
-| Setting              | Description                                                         |
-| -------------------- | ------------------------------------------------------------------- |
-| `codeSmeller.apiKey` | _(Optional)_ Store your Gemini API key. Prefer using SecretStorage. |
+| Setting                          | Description                                                          |
+| -------------------------------- | -------------------------------------------------------------------- |
+| `codeSmeller.apiKey`             | _(Optional)_ Store your Gemini API key. Prefer using SecretStorage.  |
+| `codeSmeller.supportedLanguages` | Array of supported languageIds. Updated dynamically via Add Language |
 
 ---
 
 ## 📦 Commands
 
-| Command                            | Description                                             |
-| ---------------------------------- | ------------------------------------------------------- |
-| `Code Smeller: Smell Code`         | Run a Gemini-powered code review on the current file    |
-| `Code Smeller: Set Gemini API Key` | Securely store your API key using VS Code SecretStorage |
+| Command                                             | Description                                              |
+| --------------------------------------------------- | -------------------------------------------------------- |
+| `Code Smeller: Smell Code`                          | Run a Gemini-powered code review on the current file     |
+| `Code Smeller: Set Gemini API Key`                  | Securely store your API key using VS Code SecretStorage  |
+| `Code Smeller: Add Language To Supported Languages` | Adds the current file’s languageId to the supported list |
 
 ---
 
