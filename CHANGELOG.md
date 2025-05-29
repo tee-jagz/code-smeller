@@ -14,14 +14,23 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 - Changed the linter from eslint and pylint to whatever is used by vscode
 
-## [0.0.5]
+## [0.0.5] -2025-05-29
 
 ### Added
 
+- **Cache system** for Gemini-powered reviews (per file, refreshed every 3 days)
+- **Command:** `Code Smeller: Add Language` to dynamically add the current `languageId` to the list of supported languages
+- **Config option:** `codeSmeller.addLanguage` now user-editable
+- **Code Review panel persistence:** Sidebar panel stays open and updates between Smell Code runs
+
 ### Changed
+
+- `Code Smeller: Smell Code` menu option to `Smell Code`
 
 ### Removed
 
-### Deprecated
+- Legacy hardcoded language support list
 
 ### Security
+
+- Continued use of VS Code SecretStorage to securely store the Gemini API key
