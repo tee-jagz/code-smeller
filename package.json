@@ -4,7 +4,7 @@
   "publisher": "TolulopeJegede",
   "description": "LLM-powered VS Code extension that scores your code quality, detects smells, and delivers smart, fun reviews in real time.",
   "icon": "resources/img3.png",
-  "version": "0.0.4",
+  "version": "0.0.6",
   "engines": {
     "vscode": "^1.75.0"
   },

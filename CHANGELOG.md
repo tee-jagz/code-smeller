@@ -34,3 +34,13 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### Security
 
 - Continued use of VS Code SecretStorage to securely store the Gemini API key
+
+## [0.0.6] -2025-06-07
+
+### Changed
+
+- Updated system prompt to provide more actionable recommendations
+
+### Security
+
+- Continued use of VS Code SecretStorage to securely store the Gemini API key

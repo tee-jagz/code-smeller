@@ -37,11 +37,6 @@ function cacheReview(
 }
 
 
-export function deactivate() {
-  vscode.workspace.getConfiguration().update("codeSmellerCache", {}, true);
-}
-
-
 function getCachedReview(
   context: vscode.ExtensionContext,
   code: string
@@ -57,51 +52,51 @@ function getCachedReview(
 
 function getInstruction(code: string): string{
 	return `
-		You are an Engineering Manager with 10 years of experience trying to help developers grow into senior engineers.
+		Act as a senior engineer reviewing a production pull request.  
+		Assume the author is mid-level or junior and wants to improve.  
+		Focus on high-impact issues. Suggest best practices only where they materially improve clarity, maintainability, or correctness.  
+		Do not explain beginner concepts or rewrite the code.
 
-		Your task is to review the code below and provide constructive, actionable feedback.
+		Use official documentation primarily and widely-accepted conventions of the language, framework, or libraries.
 
-		You MUST use official documentation and widely-accepted best practices of the language, framework, or libraries used.
-
-		### Focus Areas
-
-		Identify and suggest improvements for:
-		1. Variable naming clarity and consistency
-		2. Refactoring opportunities, but ONLY where relevant:
-		- DRY violations
-		- Decomposition of large functions
+		### Review Criteria
+		Identify and suggest improvements only for:
+		- Poor or vague variable naming
+		- DRY violations or repeated logic
+		- Functions that are too long or do too much
 		- SRP (Single Responsibility Principle) violations
 		- Tight coupling or poor abstraction
-		- Poor or missing error handling
-		- Data clumps or long parameter lists
+		- Missing or weak error handling
+		- Long parameter lists or data clumps
 		- Violations of separation of concerns
-		- Any patterns that make the code harder to read, test, or reuse
+		- Patterns that reduce readability or reuse
 
-		⚠️ Be succinct, practical, and helpful.
-		- Do **not** rewrite or restate the code.
-		- Do **not** suggest changes unless they will clearly improve the codebase or developer's skills.
-		- Avoid nitpicking or pedantic suggestions.
-		- Stay focused on what matters most.
-		- Try to give guiding instructions without actively writing the code
-		- Go straight to the review with no added sentence or introduction before
+		### Output Rules
+		- Do not restate or reformat the input code
+		- Do not include any headings, summaries, or introductions
+		- Do not use markdown or prose outside the JSON block
+		- Limit the review to 10 points max
+		- Use direct, concise, actionable language
+		- Output must be valid JSON — nothing else
+		- Provide output as bullet points
 
+		### Output Format
+		Return exactly:
 
-		You MUST return your output strictly as a JSON object in this format:
-
-		\`\`\`json
 		{
-		"codeSmellScore": number,
-		"codeReview": string
+		"codeSmellScore": <integer from 1 to 5>,
+		"codeReview": "<string, with a max of 1500 characters>"
 		}
-		\`\`\`
 
-		codeSmellScore is a smell score from 1 to 5 with 5 being code with terrible practices and 1 being clean code with no issues
+		Score definitions:
+		- 1 = Excellent (no real issues)
+		- 2 = Minor issues (clean but room for polish)
+		- 3 = Moderate issues (some maintainability or readability problems)
+		- 4 = Major issues (clear violations or design concerns)
+		- 5 = Severe issues (unreadable, broken, or unsafe code)
 
-		Code to review:
-
-		\`\`\`
+		### Code to review:
 		${code}
-		\`\`\`
 		`
 }
 
@@ -382,6 +377,10 @@ function showReviewPanel(context: vscode.ExtensionContext, content:any ){
 	};
 	}
 
+
+export function deactivate() {
+  vscode.workspace.getConfiguration().update("codeSmellerCache", {}, true);
+}
 
 
 export function activate(context: vscode.ExtensionContext) {
